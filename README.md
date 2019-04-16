@@ -1,10 +1,6 @@
-# Canvas-Module-Prestashop-15
-Canvas de module pour PrestaShop compatible 1.5 & 1.6
+# Prestashop-Geo-IP-redirect
+Redirect prestashop market to subdomains by IP
 
 ## ChangeLog
-* v1.6.1:
-	* Norms
-* v1.6.0:
-	* Mise à jour des licences.
-* v1.5.0 et précédentes:
-	* Initialisation du module exemple.
+* v1.0.0:
+	* Inited project
