@@ -24,25 +24,23 @@
 *  International Registered Trademark & Property of PrestaShop SA
 */
 
-class ExampleData extends ObjectModel
+class GeoData extends ObjectModel
 {
 	/** @var string Name */
-	public $name;
-	public $lorem;
+	public $country;
+	public $dest_url;
 
 	/**
 	 * @see ObjectModel::$definition
 	 */
 	public static $definition = array(
-		'table' => 'example_data',
-		'primary' => 'id_example_data',
-		'multilang' => true,
+		'table' => 'geo_data',
+		'primary' => 'id_geo_data',
+		'multilang' => false,
 		'fields' => array(
 			/* Lang fields */
-			'name' => 		        array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isGenericName', 'required' => true, 'size' => 255),
-			'lorem' => 		        array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isGenericName', 'required' => true, 'size' => 255),
-			'exampledate' => 		array('type' => self::TYPE_STRING,  'validate' => 'isGenericName', 'required' => false, 'size' => 255),
-			'file_url' => 		    array('type' => self::TYPE_STRING, 'lang' => true,  'validate' => 'isGenericName', 'required' => false, 'size' => 255),
-		),
+			'country' => 		        array('type' => self::TYPE_STRING, 'lang' => false, 'validate' => 'isGenericName', 'required' => true, 'size' => 255),
+			'dest_url' => 		        array('type' => self::TYPE_STRING, 'lang' => false, 'validate' => 'isGenericName', 'required' => true, 'size' => 255),
+			),
 	);
 }

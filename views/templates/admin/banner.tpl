@@ -1,5 +1,4 @@
-<?php
-/**
+{*
 * 2007-2015 PrestaShop
 *
 * NOTICE OF LICENSE
@@ -18,14 +17,14 @@
 * versions in the future. If you wish to customize PrestaShop for your
 * needs please refer to http://www.prestashop.com for more information.
 *
-*  @author    PrestaShop SA <contact@prestashop.com>
-*  @copyright 2007-2015 PrestaShop SA
-*  @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+*  @author     PrestaShop SA <contact@prestashop.com>
+*  @copyright  2007-2015 PrestaShop SA
+*  @license    http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
 *  International Registered Trademark & Property of PrestaShop SA
-*/
+*}
+{if $isset }
+    <img src="{$banner_file_url}" alt="transport promo Rakarik" title="Promo Rakarik" id="{$class}" />
+{/if}
 
-/* Init */
-$sql = array();
-$sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'example_data`;';
-$sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'example_data_lang`;';
-$sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'geo_data`;';
+{*<img src="https://rakarik.com/img/livraison-francais-header.png" alt="transport promo Rakarik" title="Promo Rakarik" id="b-fr" />*}
+{*<img src="https://rakarik.com/img/header-arab-livraison.png" alt="transport promo Rakarik" title="" id="b-ar" />*}

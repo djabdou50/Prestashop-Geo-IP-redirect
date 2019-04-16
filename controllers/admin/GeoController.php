@@ -35,20 +35,21 @@
  * @since      	File available since Release 1.0
 */
 
-class AdminExampleController extends ModuleAdminController
+
+
+class GeoController extends ModuleAdminController
 {
 	public function __construct()
 	{
-		$this->table = 'example_data';
-		$this->className = 'ExampleData';
-		$this->lang = true;
+		$this->table = 'geo_data';
+		$this->className = 'GeoData';
+		$this->lang = false;
 		$this->deleted = false;
 		$this->colorOnBackground = false;
 		$this->bulk_actions = array('delete' => array('text' => $this->l('Delete selected'), 'confirm' => $this->l('Delete selected items?')));
 		$this->context = Context::getContext();
+		$this->bootstrap = true;
 
-		// définition de l'upload, chemin par défaut _PS_IMG_DIR_
-		$this->fieldImageSettings = array('name' => 'image', 'dir' => 'example');
 
 		parent::__construct();
 	}
@@ -70,23 +71,19 @@ class AdminExampleController extends ModuleAdminController
 			);
 
 		$this->fields_list = array(
-			'id_example_data' => array(
+			'id_geo_data' => array(
 				'title' => $this->l('ID'),
 				'align' => 'center',
 				'width' => 25
 			),
-			'name' => array(
-				'title' => $this->l('Name'),
+			'country' => array(
+				'title' => $this->l('Country'),
 				'width' => 'auto',
 			),
-		);
-
-		// Gère les positions
-		$this->fields_list['position'] = array(
-			'title' => $this->l('Position'),
-			'width' => 70,
-			'align' => 'center',
-			'position' => 'position'
+			'dest_url' => array(
+				'title' => $this->l('Destination URL'),
+				'width' => 'auto',
+			),
 		);
 
 		$lists = parent::renderList();
@@ -150,58 +147,33 @@ class AdminExampleController extends ModuleAdminController
 		$this->fields_form = array(
 			'tinymce' => true,
 			'legend' => array(
-				'title' => $this->l('Example'),
+				'title' => $this->l('Redirections'),
 				'image' => '../img/admin/cog.gif'
 			),
 			'input' => array(
 				array(
 					'type' => 'text',
-					'lang' => true,
-					'label' => $this->l('Name:'),
-					'name' => 'name',
+					'label' => $this->l('Pays:'),
+					'name' => 'country',
 					'size' => 40
-				),
-				array(
-					'type' => 'file',
-					'label' => $this->l('Logo:'),
-					'name' => 'image',
-					'display_image' => true,
-					'desc' => $this->l('Upload Example image from your computer')
 				),
 				array(
 					'type' => 'text',
-					'label' => $this->l('Lorem:'),
-					'name' => 'lorem',
-					'readonly' => true,
-					'disabled' => true,
+					'label' => $this->l('Destination (URL):'),
+					'name' => 'dest_url',
 					'size' => 40
-				),
-				array(
-					'type' => 'date',
-					'name' => 'exampledate',
 				)
 			),
 			'submit' => array(
 				'title' => $this->l('Save'),
-				'class' => 'button'
+				'class' => 'button',
+				'name' =>  ($_GET['id_geo_data'] ) ? "updategeo_data" : "addgeo_data",
 			)
 		);
 
+
 		if (!($obj = $this->loadObject(true)))
 			return;
-
-		/* Thumbnail
-		 * @todo Error, deletion of the image
-		*/
-		$image = ImageManager::thumbnail(_PS_IMG_DIR_.'region/'.$obj->id.'.jpg', $this->table.'_'.(int)$obj->id.'.'.$this->imageType, 350, $this->imageType, true);
-
-		$this->fields_value = array(
-			'image' => $image ? $image : false,
-			'size' => $image ? filesize(_PS_IMG_DIR_.'example/'.$obj->id.'.jpg') / 1000 : false,
-
-		);
-
-		$this->fields_value = array('lorem' => 'ipsum');
 
 		return parent::renderForm();
 	}
@@ -211,18 +183,38 @@ class AdminExampleController extends ModuleAdminController
 		if (Tools::isSubmit('submitAdd'.$this->table))
 		{
 			// Create Object ExampleData
-			$exemple_data = new ExampleData();
+			$geo_data = new GeoData();
 
-			$exemple_data->exampledate = array();
-			$languages = Language::getLanguages(false);
-				foreach ($languages as $language)
-					$exemple_data->name[$language['id_lang']] = Tools::getValue('name_'.$language['id_lang']);
+			$geo_data->country = Tools::getValue('country');
+			$geo_data->dest_url = Tools::getValue('dest_url');
 
-			// Save object
-			if (!$exemple_data->save())
-				$this->errors[] = Tools::displayError('An error has occurred: Can\'t save the current object');
-			else
-				Tools::redirectAdmin(self::$currentIndex.'&conf=4&token='.$this->token);
+			$id = Tools::getValue('id_geo_data');
+
+
+			if( Tools::isSubmit('update'.$this->table ) )
+			{
+				$where = 'id_geo_data = '.$id;
+				Db::getInstance()->update('geo_data', array(
+					'country'=> $geo_data->country,
+					'dest_url'=> $geo_data->dest_url,
+				), $where );
+			}
+
+
+			if( Tools::isSubmit('add'.$this->table ) ){
+
+				if (!$geo_data->save())
+					$this->errors[] = Tools::displayError('An error has occurred: Can\'t save the current object');
+				else
+					Tools::redirectAdmin(self::$currentIndex.'&conf=4&token='.$this->token);
+			}
+
 		}
+
+		if(Tools::isSubmit('delete'.$this->table) && Tools::isSubmit('id_geo_data'))
+		{
+			Db::getInstance()->delete('geo_data', 'id_geo_data =' . Tools::getValue('id_geo_data') );
+		}
+
 	}
 }

@@ -79,22 +79,26 @@ if (!defined('_MYSQL_ENGINE_'))
 	define('_MYSQL_ENGINE_', 'MyISAM');
 
 /* Loading Models */
-require_once(_PS_MODULE_DIR_.'example/models/ExampleData.php');
+require_once(_PS_MODULE_DIR_.'geoipredirect/models/ExampleData.php');
+require_once(_PS_MODULE_DIR_.'geoipredirect/models/GeoData.php');
 
-class Example extends Module
+require (dirname(__FILE__). '/vendor/autoload.php');
+use GeoIp2\Database\Reader;
+
+class Geoipredirect extends Module
 {
 	private $errors = null;
 
 	public function __construct()
 	{
 		// Author of the module
-		$this->author = 'PrestaEdit';
+		$this->author = 'eyetags';
 		// Name of the module ; the same that the directory and the module ClassName
-		$this->name = 'example';
+		$this->name = 'geoipredirect';
 		// Tab where it's the module (administration, front_office_features, ...)
 		$this->tab = 'others';
 		// Current version of the module
-		$this->version = '1.6.1';
+		$this->version = '1.0.0';
 
 		//	Min version of PrestaShop wich the module can be install
 		$this->ps_versions_compliancy['min'] = '1.5';
@@ -119,14 +123,14 @@ class Example extends Module
 		parent::__construct();
 
 		// Name in the modules list
-		$this->displayName = $this->l('Example');
+		$this->displayName = $this->l('Geo Ip Redirect');
 		// A little description of the module
-		$this->description = $this->l('Module Example');
+		$this->description = $this->l('Redirect shop by ip / country');
 
 		// Message show when you wan to delete the module
 		$this->confirmUninstall = $this->l('Are you sure you want to delete this module ?');
 
-		if ($this->active && Configuration::get('EXAMPLE_CONF') == '')
+		if ($this->active && Configuration::get('GEOIPREDIRECT_CONF') == '')
 			$this->warning = $this->l('You have to configure your module');
 
 		$this->errors = array();
@@ -137,6 +141,7 @@ class Example extends Module
 		// Install SQL
 		$sql = array();
 		include(dirname(__FILE__).'/sql/install.php');
+
 		foreach ($sql as $s)
 			if (!Db::getInstance()->execute($s))
 				return false;
@@ -144,7 +149,7 @@ class Example extends Module
 		// Install Tabs
 		$parent_tab = new Tab();
 		// Need a foreach for the language
-		$parent_tab->name[$this->context->language->id] = $this->l('Main Tab Example');
+		$parent_tab->name[$this->context->language->id] = $this->l('Utilities');
 		$parent_tab->class_name = 'AdminMainExample';
 		$parent_tab->id_parent = 0; // Home tab
 		$parent_tab->module = $this->name;
@@ -152,19 +157,30 @@ class Example extends Module
 
 		$tab = new Tab();
 		// Need a foreach for the language
-		$tab->name[$this->context->language->id] = $this->l('Tab Example');
-		$tab->class_name = 'AdminExample';
+		$tab->name[$this->context->language->id] = $this->l('Geo destination');
+		$tab->class_name = 'Geo';
+		$tab->id_parent = $parent_tab->id;
+		$tab->module = $this->name;
+		$tab->add();
+
+		$tab = new Tab();
+		// Need a foreach for the language
+		$tab->name[$this->context->language->id] = $this->l('Banner admin');
+		$tab->class_name = 'Banner';
 		$tab->id_parent = $parent_tab->id;
 		$tab->module = $this->name;
 		$tab->add();
 
 		//Init
-		Configuration::updateValue('EXAMPLE_CONF', '');
+		Configuration::updateValue('GEOIPREDIRECT_CONF', '');
 
 		// Install Module
 		// In this part, you don't need to add a hook in database, even if it's a new one.
 		// The registerHook method will do it for your !
-		return parent::install() && $this->registerHook('actionObjectExampleDataAddAfter');
+		return parent::install() &&
+		       $this->registerHook('actionObjectExampleDataAddAfter') &&
+		       $this->registerHook('actiondisplayHeaderBanner') &&
+		       $this->registerHook('actionDispatcher');
 	}
 
 	public function uninstall()
@@ -176,7 +192,7 @@ class Example extends Module
 			if (!Db::getInstance()->execute($s))
 				return false;
 
-		Configuration::deleteByName('EXAMPLE_CONF');
+		Configuration::deleteByName('GEOIPREDIRECT_CONF');
 
 		// Uninstall Tabs
 		$moduleTabs = Tab::getCollectionFromModule($this->name);
@@ -201,9 +217,9 @@ class Example extends Module
 		$output = '<h2>'.$this->displayName.'</h2>';
 		if (Tools::isSubmit('submit'.Tools::ucfirst($this->name)))
 		{
-			$example_conf = Tools::getValue('EXAMPLE_CONF');
+			$example_conf = Tools::getValue('GEOIPREDIRECT_CONF');
 
-			Configuration::updateValue('EXAMPLE_CONF', $example_conf);
+			Configuration::updateValue('GEOIPREDIRECT_CONF', $example_conf);
 
 			if (isset($this->errors) && count($this->errors))
 				$output .= $this->displayError(implode('<br />', $this->errors));
@@ -217,12 +233,71 @@ class Example extends Module
 	{
 		$this->context->smarty->assign('request_uri', Tools::safeOutput($_SERVER['REQUEST_URI']));
 		$this->context->smarty->assign('path', $this->_path);
-		$this->context->smarty->assign('EXAMPLE_CONF', pSQL(Tools::getValue('EXAMPLE_CONF', Configuration::get('EXAMPLE_CONF'))));
+		$this->context->smarty->assign('GEOIPREDIRECT_CONF', pSQL(Tools::getValue('GEOIPREDIRECT_CONF', Configuration::get('GEOIPREDIRECT_CONF'))));
 		$this->context->smarty->assign('submitName', 'submit'.Tools::ucfirst($this->name));
 		$this->context->smarty->assign('errors', $this->errors);
 
 		// You can return html, but I prefer this new version: use smarty in admin, :)
 		return $this->display(__FILE__, 'views/templates/admin/configure.tpl');
+	}
+
+	public function hookActiondisplayHeaderBanner()
+	{
+
+		$id_lang = $this->context->language->id;
+
+		$sql = 'SELECT file_url FROM '._DB_PREFIX_.'example_data_lang WHERE id_lang =' . $id_lang ;
+		$file_name = Db::getInstance()->getValue($sql);
+
+		$this->context->smarty->assign(array(
+			'banner_file_url' => _PS_BASE_URL_.'/upload/'. $file_name,
+			'class' => 'b-' . $this->context->language->iso_code,
+			"isset" => $file_name ? true: false,
+		));
+
+		// You can return html, but I prefer this new version: use smarty in admin, :)
+		return $this->display(__FILE__, 'views/templates/admin/banner.tpl');
+	}
+
+	public function hookActionDispatcher($params) {
+		// your code
+
+		if($params["controller_type"] !== 2){
+
+			$sql = 'SELECT country, dest_url FROM '._DB_PREFIX_.'geo_data WHERE country = "default" ';
+			$default = Db::getInstance()->getRow($sql, $use_cache = 1);
+
+			$reader = new Reader(dirname(__FILE__) . "/GeoLite2-Country.mmdb");
+			try {
+				$record = $reader->country($_SERVER['REMOTE_ADDR']);
+			}catch (Exception $e){}
+
+//		var_dump($record->country->isoCode);
+
+			if(isset( $record->country->isoCode )){
+
+				$sql = 'SELECT country, dest_url FROM '._DB_PREFIX_.'geo_data WHERE country = "'.$record->country->isoCode.'" ';
+				$country = Db::getInstance()->getRow($sql, $use_cache = 1);
+
+				if($country["dest_url"] && $country["dest_url"] !== $_SERVER['SERVER_NAME']){
+//				echo "Gooo to " . $country["dest_url"];
+					Tools::redirect("http://" . $country["dest_url"] );
+				}
+
+				if( ! $country["dest_url"]) {
+//				echo "Gooo to " . $default["dest_url"];
+					Tools::redirect("http://" . $default["dest_url"] );
+				}
+
+//				var_dump($_SERVER['SERVER_NAME']);
+//				var_dump($_SERVER['REMOTE_ADDR']);
+//				var_dump( $country );
+
+			}elseif( $default["dest_url"] !== $_SERVER['SERVER_NAME'] ){
+//			echo "Gooo to " . $default["dest_url"];
+			Tools::redirect("http://" . $default["dest_url"] );
+			}
+		}
 	}
 
 
